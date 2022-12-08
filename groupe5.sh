@@ -5,4 +5,4 @@ apt-cache policy docker-ce
 sudo apt update -y
 sudo apt install docker-ce docker-ce-cli containerd.io -y
 sudo docker volume create heimdall
-sudo docker run --name=heimdall -e PUID=1000 -e PGID=1000 -e TZ=america/new_york -p 8006:80 -p 406:443 -v heimdall:/config --restart unless-stopped linuxserver/heimdall
+sudo docker run --name=heimdall -e PUID=1000 -e PGID=1000 -e TZ=america/new_york -p 8006:80 -p 406:443 -v heimdall:/config --restart unless-stopped linuxserver/heimdall -d
