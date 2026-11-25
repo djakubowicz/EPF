@@ -70,14 +70,39 @@
         organization: "{{ item }}"
         state: present
       loop: "{{ groupes }}"
+      
+     - name: Récupérer les organisations via l'API gateway
+      ansible.builtin.uri:
+        url: "{{ aap_hostname }}/api/gateway/v1/organizations/?page_size=200"
+        user: "{{ aap_username }}"
+        password: "{{ aap_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ aap_validate_certs }}"
+        return_content: true
+      register: api_orgs
+      no_log: true
+
+    - name: Récupérer les équipes via l'API gateway
+      ansible.builtin.uri:
+        url: "{{ aap_hostname }}/api/gateway/v1/teams/?page_size=200"
+        user: "{{ aap_username }}"
+        password: "{{ aap_password }}"
+        force_basic_auth: true
+        validate_certs: "{{ aap_validate_certs }}"
+        return_content: true
+      register: api_teams
+      no_log: true
+
+    - name: Construire les tables nom -> id
+      ansible.builtin.set_fact:
+        orgs_ids: "{{ api_orgs.json.results | selectattr('name', 'in', groupes) | items2dict(key_name='name', value_name='id') }}"
+        equipes_ids: "{{ api_teams.json.results | selectattr('name', 'match', '^groupe-.*-eleves$') | items2dict(key_name='name', value_name='id') }}"
 
     - name: Affecter chaque élève à l'équipe de son groupe
       ansible.platform.role_user_assignment:
         user: "{{ item.username }}"
         role_definition: Team Member
-        assignment_objects:
-          - name: "{{ item.groupe }}-eleves"
-            type: team
+        object_id: "{{ equipes_ids[item.groupe ~ '-eleves'] }}"
         state: present
       loop: "{{ eleves }}"
       loop_control:
@@ -87,9 +112,7 @@
       ansible.platform.role_team_assignment:
         team: "{{ item.0 }}-eleves"
         role_definition: "{{ item.1 }}"
-        assignment_objects:
-          - name: "{{ item.0 }}"
-            type: organization
+        object_id: "{{ orgs_ids[item.0] }}"
         state: present
       loop: "{{ groupes | product(roles_equipe_eleves) | list }}"
       loop_control:
@@ -99,9 +122,7 @@
       ansible.platform.role_user_assignment:
         user: "{{ item.1 }}"
         role_definition: Organization Admin
-        assignment_objects:
-          - name: "{{ item.0 }}"
-            type: organization
+        object_id: "{{ orgs_ids[item.0] }}"
         state: present
       loop: "{{ groupes | product(formateurs) | list }}"
       loop_control:
