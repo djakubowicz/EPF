@@ -1,0 +1,98 @@
+---
+# Provisionnement AAP 2.7 : 1 organisation + 1 équipe + N élèves par groupe.
+# Compartimentage : une organisation par groupe (projets, inventaires, credentials,
+# job templates et workflows sont isolés par organisation).
+#
+# Prérequis : collection ansible.platform (>= version livrée avec AAP 2.7)
+# Exécution : ansible-playbook aap_provision_groupes.yml -e @vault.yml --ask-vault-pass
+
+- name: Provisionnement des groupes de formation sur AAP
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars_groupes.yml
+
+  # Les modules ansible.platform lisent ces variables d'environnement
+  environment:
+    AAP_HOSTNAME: "{{ aap_hostname }}"
+    AAP_USERNAME: "{{ aap_username }}"
+    AAP_PASSWORD: "{{ aap_password }}"
+    AAP_VALIDATE_CERTS: "{{ aap_validate_certs | string }}"
+
+  pre_tasks:
+    - name: Construire la liste des groupes (groupe-01 ... groupe-NN)
+      ansible.builtin.set_fact:
+        groupes: "{{ groupes | default([]) + ['groupe-%02d' | format(item)] }}"
+      loop: "{{ range(1, nb_groupes + 1) | list }}"
+
+    # Pour de vrais noms d'élèves, remplacer ce set_fact par une liste statique
+    # de la forme : {groupe: groupe-01, username: jdupont, first_name: Jean, last_name: Dupont}
+    - name: Construire la liste des élèves (g01-eleve1 ... )
+      ansible.builtin.set_fact:
+        eleves: >-
+          {{ eleves | default([]) + [{
+            'groupe': 'groupe-%02d' | format(item.0),
+            'username': 'g%02d-eleve%d' | format(item.0, item.1),
+            'first_name': 'Eleve%d' | format(item.1),
+            'last_name': 'G%02d' | format(item.0)
+          }] }}
+      loop: "{{ range(1, nb_groupes + 1) | product(range(1, eleves_par_groupe + 1)) | list }}"
+
+  tasks:
+    - name: Créer une organisation par groupe
+      ansible.platform.organization:
+        name: "{{ item }}"
+        description: "Organisation de {{ item }} (formation automatisation)"
+        state: present
+      loop: "{{ groupes }}"
+
+    - name: Créer les comptes élèves, rattachés uniquement à l'organisation de leur groupe
+      ansible.platform.user:
+        username: "{{ item.username }}"
+        first_name: "{{ item.first_name }}"
+        last_name: "{{ item.last_name }}"
+        password: "{{ mot_de_passe_initial }}"
+        update_secrets: false      # ne réécrase pas un mot de passe déjà changé
+        is_superuser: false
+        organizations:
+          - "{{ item.groupe }}"
+        state: present
+      loop: "{{ eleves }}"
+      loop_control:
+        label: "{{ item.username }}"
+      no_log: true
+
+    - name: Créer une équipe d'élèves par organisation et y affecter les élèves du groupe
+      ansible.platform.team:
+        name: "{{ item }}-eleves"
+        organization: "{{ item }}"
+        users: "{{ eleves | selectattr('groupe', 'equalto', item) | map(attribute='username') | list }}"
+        state: present
+      loop: "{{ groupes }}"
+
+    - name: Donner à chaque équipe ses droits sur SA seule organisation
+      ansible.platform.role_team_assignment:
+        team: "{{ item.0 }}-eleves"
+        role_definition: "{{ item.1 }}"
+        assignment_objects:
+          - name: "{{ item.0 }}"
+            type: organization
+        state: present
+      loop: "{{ groupes | product(roles_equipe_eleves) | list }}"
+      loop_control:
+        label: "{{ item.0 }} -> {{ item.1 }}"
+
+    - name: Donner Organization Admin aux formateurs sur chaque groupe
+      ansible.platform.role_user_assignment:
+        user: "{{ item.1 }}"
+        role_definition: Organization Admin
+        assignment_objects:
+          - name: "{{ item.0 }}"
+            type: organization
+        state: present
+      loop: "{{ groupes | product(formateurs) | list }}"
+      loop_control:
+        label: "{{ item.1 }} -> {{ item.0 }}"
+      when: formateurs | length > 0
