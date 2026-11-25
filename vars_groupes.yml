@@ -13,7 +13,7 @@ eleves_par_groupe: 4
 mot_de_passe_initial: "{{ vault_mot_de_passe_initial }}"
 
 # Comptes formateurs DÉJÀ existants dans AAP : Organization Admin sur chaque groupe
-formateurs: []
+formateurs: 
 #  - formateur1
   - admin
 
