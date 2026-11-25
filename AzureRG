@@ -1,0 +1,10 @@
+- name: Create Azure resource group
+  hosts: localhost
+  collections:
+    - azure.azcollection
+  
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: myResourceGroup
+        location: francecentral
