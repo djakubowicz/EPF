@@ -64,13 +64,24 @@
         label: "{{ item.username }}"
       no_log: true
 
-    - name: Créer une équipe d'élèves par organisation et y affecter les élèves du groupe
+    - name: Créer une équipe d'élèves par organisation
       ansible.platform.team:
         name: "{{ item }}-eleves"
         organization: "{{ item }}"
-        users: "{{ eleves | selectattr('groupe', 'equalto', item) | map(attribute='username') | list }}"
         state: present
       loop: "{{ groupes }}"
+
+    - name: Affecter chaque élève à l'équipe de son groupe
+      ansible.platform.role_user_assignment:
+        user: "{{ item.username }}"
+        role_definition: Team Member
+        assignment_objects:
+          - name: "{{ item.groupe }}-eleves"
+            type: team
+        state: present
+      loop: "{{ eleves }}"
+      loop_control:
+        label: "{{ item.username }}"
 
     - name: Donner à chaque équipe ses droits sur SA seule organisation
       ansible.platform.role_team_assignment:
