@@ -71,7 +71,7 @@
         state: present
       loop: "{{ groupes }}"
       
-     - name: Récupérer les organisations via l'API gateway
+    - name: Récupérer les organisations via l'API gateway
       ansible.builtin.uri:
         url: "{{ aap_hostname }}/api/gateway/v1/organizations/?page_size=200"
         user: "{{ aap_username }}"
