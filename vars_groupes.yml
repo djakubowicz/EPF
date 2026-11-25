@@ -1,0 +1,27 @@
+---
+# Connexion à la Platform Gateway AAP 2.7
+aap_hostname: "https://aap.example.com"
+aap_username: "admin"
+aap_password: "{{ vault_aap_password }}"   # à mettre dans un vault
+aap_validate_certs: true
+
+# Dimensionnement de la formation
+nb_groupes: 7
+eleves_par_groupe: 4
+
+# Mot de passe initial des comptes élèves (à mettre dans un vault)
+mot_de_passe_initial: "{{ vault_mot_de_passe_initial }}"
+
+# Comptes formateurs DÉJÀ existants dans AAP : Organization Admin sur chaque groupe
+formateurs: []
+#  - formateur1
+
+# Droits donnés à l'équipe d'élèves, limités à LEUR organisation.
+# Pas d'"Organization Admin" : les élèves ne peuvent donc pas créer d'utilisateurs ni d'équipes.
+roles_equipe_eleves:
+  - Organization Member
+  - Organization Project Admin
+  - Organization Inventory Admin
+  - Organization Credential Admin
+  - Organization JobTemplate Admin
+  - Organization WorkflowJobTemplate Admin
