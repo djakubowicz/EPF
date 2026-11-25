@@ -15,6 +15,7 @@ mot_de_passe_initial: "{{ vault_mot_de_passe_initial }}"
 # Comptes formateurs DÉJÀ existants dans AAP : Organization Admin sur chaque groupe
 formateurs: []
 #  - formateur1
+  - admin
 
 # Droits donnés à l'équipe d'élèves, limités à LEUR organisation.
 # Pas d'"Organization Admin" : les élèves ne peuvent donc pas créer d'utilisateurs ni d'équipes.
