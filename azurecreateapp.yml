@@ -1,0 +1,50 @@
+- name: Installer Docker et lancer le jeu 2048
+  hosts: all
+  become: true
+
+  vars:
+    game_image: "alexwhen/docker-2048"
+    game_container_name: "game-2048"
+    game_host_port: 8080
+    game_container_port: 80
+
+  tasks:
+    - name: Installer Docker (paquets Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - python3-docker   # requis par community.docker
+        state: present
+        update_cache: true
+
+    - name: Démarrer Docker et l'activer au boot
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Lancer le jeu 2048 (écoute locale uniquement)
+      community.docker.docker_container:
+        name: "{{ game_container_name }}"
+        image: "{{ game_image }}"
+        state: started
+        pull: true
+        restart_policy: unless-stopped
+        published_ports:
+          - "127.0.0.1:{{ game_host_port }}:{{ game_container_port }}"
+
+    - name: Vérifier que le jeu répond
+      ansible.builtin.uri:
+        url: "http://localhost:{{ game_host_port }}"
+        status_code: 200
+      register: game_check
+      retries: 5
+      delay: 5
+      until: game_check.status == 200
+
+    - name: Comment jouer
+      ansible.builtin.debug:
+        msg: >-
+          ssh -L 8080:localhost:{{ game_host_port }}
+          {{ ansible_user }}@{{ inventory_hostname }}
+          puis http://localhost:8080
