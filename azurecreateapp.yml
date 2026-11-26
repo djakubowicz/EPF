@@ -23,15 +23,13 @@
         state: started
         enabled: true
 
-    - name: Lancer le jeu 2048 (écoute locale uniquement)
-      community.docker.docker_container:
-        name: "{{ game_container_name }}"
-        image: "{{ game_image }}"
-        state: started
-        pull: true
-        restart_policy: unless-stopped
-        published_ports:
-          - "127.0.0.1:{{ game_host_port }}:{{ game_container_port }}"
+    - name: Lancer le conteneur 2048 (sans community.docker)
+      ansible.builtin.command: >
+        docker run -d --name game-2048 --restart unless-stopped
+        -p 80:80 alexwhen/docker-2048
+      args:
+        creates: /var/lib/docker/containers   # simple garde grossière
+    
 
     - name: Vérifier que le jeu répond
       ansible.builtin.uri:
