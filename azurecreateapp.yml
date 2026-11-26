@@ -23,12 +23,17 @@
         state: started
         enabled: true
 
+    - name: Vérifier si le conteneur existe déjà
+      ansible.builtin.command: docker inspect game-2048
+      register: game_inspect
+      changed_when: false
+      failed_when: false
+
     - name: Lancer le conteneur 2048 (sans community.docker)
       ansible.builtin.command: >
-        docker run -d --name game-2048 --restart unless-stopped -p 8080:80 aashiqq/2048-game
-      args:
-        creates: /var/lib/docker/containers   # simple garde grossière
-    
+        docker run -d --name game-2048 --restart unless-stopped
+        -p 127.0.0.1:8080:80 aashiqq/2048-game
+      when: game_inspect.rc != 0    
 
     - name: Vérifier que le jeu répond
       ansible.builtin.uri:
