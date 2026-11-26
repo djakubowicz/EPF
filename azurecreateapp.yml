@@ -25,8 +25,7 @@
 
     - name: Lancer le conteneur 2048 (sans community.docker)
       ansible.builtin.command: >
-        docker run -d --name game-2048 --restart unless-stopped
-        -p 80:80 aashiqq/2048-game
+        docker run -d --name game-2048 --restart unless-stopped -p 80:80 aashiqq/2048-game
       args:
         creates: /var/lib/docker/containers   # simple garde grossière
     
