@@ -138,7 +138,6 @@
         parameters:
           adminPassword:
             value: "{{ admin_password }}"
-      no_log: true
       register: vm_output
 
     - name: Attendre que SSH réponde
