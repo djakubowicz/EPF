@@ -9,7 +9,6 @@
     resource_group_name: "myResourceGroup" 
     
   tasks:
-
     - name: Suppression du Groupe de Ressources Azure
       azure_rm_resourcegroup:
         name: "{{ resource_group_name }}"
