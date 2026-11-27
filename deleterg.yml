@@ -2,7 +2,9 @@
 - name: Supprimer le Groupe de Ressources (et toutes les ressources qu'il contient)
   hosts: localhost 
   connection: local
-  gather_facts: no 
+  gather_facts: no
+  collections:
+    - azure.azcollection
 
   vars:
     # IMPORTANT : Ce nom DOIT correspondre au groupe créé précédemment.
